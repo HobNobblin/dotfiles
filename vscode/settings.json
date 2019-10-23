@@ -1,0 +1,16 @@
+{
+    "terminal.integrated.shell.windows": "C:\\Users\\mfawcett\\AppData\\Local\\Programs\\Git\\bin\\bash.exe",
+    "editor.minimap.enabled": false,
+    "npm.enableScriptExplorer": true,
+    "npm.scriptExplorerAction": "run",
+    "window.zoomLevel": 0,
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    },
+    "editor.suggestSelection": "first",
+    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+    "java.errors.incompleteClasspath.severity": "ignore"
+}

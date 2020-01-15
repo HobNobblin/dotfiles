@@ -6,6 +6,11 @@
     hist = log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short
     type = cat-file -t
     dump = cat-file -p
+	d = difftool
 [user]
 	name = Mike Fawcett
 	email = mike.fawcett@aig.com
+[diff]
+	tool = vimdiff
+[difftool]
+	prompt = false

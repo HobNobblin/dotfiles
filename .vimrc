@@ -151,6 +151,8 @@ if has("gui_running")
     set guioptions-=e
     set t_Co=256
     set guitablabel=%M\ %t
+    set lines=48
+    set columns=143
     if has("gui_win32")
         set guifont=Consolas:h12:cANSI
     endif

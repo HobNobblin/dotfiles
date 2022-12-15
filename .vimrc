@@ -110,7 +110,7 @@ if $COLORTERM == 'gnome-terminal'
 endif
 
 try
-    colorscheme desert
+    colorscheme morning
 catch
 endtry
 

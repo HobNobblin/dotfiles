@@ -1,0 +1,276 @@
+# ============================================================================
+# AKS Multi-Environment Management
+# ============================================================================
+
+# Environment configurations - Compatible with all shells
+export AKS_DEV_CLUSTER="aks-dev-nonp-eastus"
+export AKS_DEV_RG="persistent-aks-ta-dev-nonp-eastus"
+export AKS_DEV_SUB="xxxxxxxxxxxxxxxxxxxxxxx"
+
+export AKS_STAGE_CLUSTER="aks-stage-nonp-eastus"
+export AKS_STAGE_RG="persistent-aks-ta-stage-nonp-eastus"
+export AKS_STAGE_SUB="xxxxxxxxxxxxxxxxxxxxxxx"
+
+export AKS_ITF_CLUSTER="aks-itf-nonp-eastus"
+export AKS_ITF_RG="persistent-aks-ta-itf-nonp-eastus"
+export AKS_ITF_SUB="xxxxxxxxxxxxxxxxxxxxxxx"
+
+export AKS_PROD_CLUSTER="aks-prod-prod-eastus"
+export AKS_PROD_RG="persistent-aks-ta-prod-prod-eastus"
+export AKS_PROD_SUB="xxxxxxxxxxxxxxxxxxxxxxx"
+
+# Current environment tracking
+export KUBE_CURRENT_ENV=""
+export KUBE_FAST_MODE="${KUBE_FAST_MODE:-false}"
+
+# Core function to switch AKS environment
+# Core function to switch AKS environment
+_switch_aks_env() {
+    local env=$1
+    local cluster_name resource_group subscription
+    
+    # Get environment-specific variables
+    case "$env" in
+        dev)
+            cluster_name="$AKS_DEV_CLUSTER"
+            resource_group="$AKS_DEV_RG"
+            subscription="$AKS_DEV_SUB"
+            ;;
+        stage)
+            cluster_name="$AKS_STAGE_CLUSTER"
+            resource_group="$AKS_STAGE_RG"
+            subscription="$AKS_STAGE_SUB"
+            ;;
+        itf)
+            cluster_name="$AKS_ITF_CLUSTER"
+            resource_group="$AKS_ITF_RG"
+            subscription="$AKS_ITF_SUB"
+            ;;
+        prod)
+            cluster_name="$AKS_PROD_CLUSTER"
+            resource_group="$AKS_PROD_RG"
+            subscription="$AKS_PROD_SUB"
+            ;;
+        *)
+            echo "❌ Unknown environment: $env"
+            echo "Available environments: dev, stage, itf, prod"
+            return 1
+            ;;
+    esac
+    
+    echo "🔄 Switching to $env environment..."
+    
+    # Set Azure subscription
+    echo "🎯 Setting subscription to: $subscription"
+    az account set --subscription "$subscription"
+    
+    # Get AKS credentials
+    echo "🔐 Getting AKS credentials for: $cluster_name"
+    az aks get-credentials --resource-group "$resource_group" --name "$cluster_name" --overwrite-existing
+    
+    # Set environment tracking
+    export KUBE_CURRENT_ENV="$env"
+    
+    echo "✅ Successfully switched to $env environment"
+    
+    # Use original kubectl to avoid wrapper recursion
+    local original_kubectl="/usr/local/bin/kubectl"
+    if [[ -f "$original_kubectl" ]]; then
+        echo "📊 Current context: $("$original_kubectl" config current-context 2>/dev/null || echo 'Not set')"
+    else
+        echo "📊 Current context: $(command kubectl config current-context 2>/dev/null || echo 'Not set')"
+    fi
+}
+
+# Environment switching functions
+akskube-dev() {
+    _switch_aks_env "dev"
+}
+
+akskube-stage() {
+    _switch_aks_env "stage"
+}
+
+akskube-itf() {
+    _switch_aks_env "itf"
+}
+
+akskube-prod() {
+    _switch_aks_env "prod"
+}
+
+# Fast mode toggle functions
+kube-fast-on() {
+    export KUBE_FAST_MODE="true"
+    echo "⚡ Fast mode enabled - will try direct kubectl first"
+}
+
+kube-fast-off() {
+    export KUBE_FAST_MODE="false"
+    echo "🐌 Fast mode disabled - will use Azure CLI for all commands"
+}
+
+# Smart kubectl wrapper
+kubectl() {
+    local original_kubectl="/usr/local/bin/kubectl"
+    
+    # If no current environment, use original kubectl
+    if [[ -z "$KUBE_CURRENT_ENV" ]]; then
+        "$original_kubectl" "$@"
+        return $?
+    fi
+    
+    # Try fast mode first if enabled
+    if [[ "$KUBE_FAST_MODE" == "true" ]]; then
+        if "$original_kubectl" "$@" 2>/dev/null; then
+            return 0
+        fi
+        echo "⚠️  Direct connection failed, falling back to Azure CLI..."
+    fi
+    
+    # Get cluster info based on current environment
+    local cluster_name resource_group
+    case "$KUBE_CURRENT_ENV" in
+        dev)
+            cluster_name="$AKS_DEV_CLUSTER"
+            resource_group="$AKS_DEV_RG"
+            ;;
+        stage)
+            cluster_name="$AKS_STAGE_CLUSTER"
+            resource_group="$AKS_STAGE_RG"
+            ;;
+        itf)
+            cluster_name="$AKS_ITF_CLUSTER"
+            resource_group="$AKS_ITF_RG"
+            ;;
+        prod)
+            cluster_name="$AKS_PROD_CLUSTER"
+            resource_group="$AKS_PROD_RG"
+            ;;
+        *)
+            echo "❌ Unknown environment: $KUBE_CURRENT_ENV"
+            return 1
+            ;;
+    esac
+    
+    # Use Azure CLI command invoke
+    # Build the kubectl command properly
+    local kubectl_cmd="kubectl"
+    for arg in "$@"; do
+        kubectl_cmd="$kubectl_cmd \"$arg\""
+    done
+    
+    az aks command invoke \
+        --resource-group "$resource_group" \
+        --name "$cluster_name" \
+        --command "$kubectl_cmd"
+}
+
+# Helper functions for pod operations
+kubectl-pod-exec() {
+    local pod_name="$1"
+    local namespace="$2"
+    shift 2
+    
+    if [[ -z "$pod_name" || -z "$namespace" ]]; then
+        echo "Usage: kubectl-pod-exec <pod-name> <namespace> [-- command]"
+        echo "Example: kubectl-pod-exec my-pod default -- ps aux"
+        return 1
+    fi
+    
+    echo "🚀 Executing command in pod $pod_name..."
+    
+    if [[ $# -gt 0 ]]; then
+        kubectl exec "$pod_name" -n "$namespace" "$@"
+    else
+        kubectl exec "$pod_name" -n "$namespace" -- sh
+    fi
+}
+
+kubectl-pod-logs() {
+    local pod_name="$1"
+    local namespace="$2"
+    shift 2
+    
+    if [[ -z "$pod_name" || -z "$namespace" ]]; then
+        echo "Usage: kubectl-pod-logs <pod-name> <namespace> [kubectl-logs-options]"
+        echo "Example: kubectl-pod-logs my-pod default --tail 100"
+        return 1
+    fi
+    
+    if [[ $# -eq 0 ]]; then
+        echo "📜 Getting last 100 lines from pod $pod_name..."
+        kubectl logs "$pod_name" -n "$namespace" --tail 100
+    else
+        echo "📜 Getting logs from pod $pod_name with options: $*"
+        kubectl logs "$pod_name" -n "$namespace" "$@"
+    fi
+}
+
+kubectl-pod-env() {
+    local pod_name="$1"
+    local namespace="$2"
+    
+    if [[ -z "$pod_name" || -z "$namespace" ]]; then
+        echo "Usage: kubectl-pod-env <pod-name> <namespace>"
+        return 1
+    fi
+    
+    echo "🌍 Environment variables in pod $pod_name..."
+    kubectl exec "$pod_name" -n "$namespace" -- env | sort
+}
+
+kubectl-pod-ps() {
+    local pod_name="$1"
+    local namespace="$2"
+    
+    if [[ -z "$pod_name" || -z "$namespace" ]]; then
+        echo "Usage: kubectl-pod-ps <pod-name> <namespace>"
+        return 1
+    fi
+    
+    echo "🔍 Processes in pod $pod_name..."
+    kubectl exec "$pod_name" -n "$namespace" -- ps aux
+}
+
+# Show current AKS environment status
+kube-status() {
+    echo "🏷️  Current Environment: ${KUBE_CURRENT_ENV:-'None'}"
+    echo "⚡ Fast Mode: ${KUBE_FAST_MODE}"
+    
+    # Use the original kubectl directly to avoid wrapper recursion
+    local original_kubectl="/usr/local/bin/kubectl"
+    if [[ -f "$original_kubectl" ]]; then
+        echo "📊 Context: $("$original_kubectl" config current-context 2>/dev/null || echo 'Not set')"
+    else
+        echo "📊 Context: $(command kubectl config current-context 2>/dev/null || echo 'Not set')"
+    fi
+    
+    if [[ -n "$KUBE_CURRENT_ENV" ]]; then
+        case "$KUBE_CURRENT_ENV" in
+            dev) echo "🎯 Cluster: $AKS_DEV_CLUSTER" ;;
+            stage) echo "🎯 Cluster: $AKS_STAGE_CLUSTER" ;;
+            itf) echo "🎯 Cluster: $AKS_ITF_CLUSTER" ;;
+            prod) echo "🎯 Cluster: $AKS_PROD_CLUSTER" ;;
+        esac
+    fi
+}
+
+# List all available environments
+kube-envs() {
+    echo "Available AKS environments:"
+    local current=""
+    
+    [[ "$KUBE_CURRENT_ENV" == "dev" ]] && current=" (current)" || current=""
+    echo "  📋 dev: $AKS_DEV_CLUSTER$current"
+    
+    [[ "$KUBE_CURRENT_ENV" == "stage" ]] && current=" (current)" || current=""
+    echo "  📋 stage: $AKS_STAGE_CLUSTER$current"
+    
+    [[ "$KUBE_CURRENT_ENV" == "itf" ]] && current=" (current)" || current=""
+    echo "  📋 itf: $AKS_ITF_CLUSTER$current"
+    
+    [[ "$KUBE_CURRENT_ENV" == "prod" ]] && current=" (current)" || current=""
+    echo "  📋 prod: $AKS_PROD_CLUSTER$current"
+}
+

@@ -1,0 +1,44 @@
+[user]
+	email = xxx.xxx@xxx.com
+	name = Doe, John
+[rebase]
+	autosquash = true
+[http]
+	sslCAInfo = /home/mfawcett/Development/xxxx/local-ca-bundle.crt
+	sslVerify = true
+[alias]
+	co = checkout
+	br = branch
+	ci = commit
+	st = status
+	hist = log --pretty=format:\\\"%h %ad | %s%d [%an]\\\" --graph --date=short
+	type = cat-file -t
+	dump = cat-file -p
+	d = difftool
+[diff]
+	tool = vimdiff
+[difftool]
+	prompt = false
+[credential]
+	username = xxxx_xxx
+	helper = cache --timeout=5
+	helper = /usr/local/bin/git-credential-manager
+	credentialStore = secretservice
+	interactive = true
+	autoDetectTimeout = 10000
+	useHttpPath = false
+[credential "https://github.com"]
+	username = xxxx_xxx
+	helper = cache --timeout=5
+	helper = /usr/local/bin/git-credential-manager
+	credentialStore = secretservice
+	interactive = true
+	autoDetectTimeout = 10000
+	useHttpPath = false
+[credential "https://scm.eastus.xxx.xxxxxxxx.int"]
+    username = xxxxxxx
+    helper = 
+    helper = cache --timeout=7200
+    helper = builderscloud --environment prod
+[credential "https://xxx.xxxxxxxxx.int"]
+	provider = generic

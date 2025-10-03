@@ -1,6 +1,6 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Sets how many lines of history VIM has to remember
 set history=500
 
@@ -10,6 +10,15 @@ filetype indent on
 
 " Set to auto read when a file is changed from the outside
 set autoread
+
+" Show line numbers
+set nu
+
+" Allows open new splits below 
+set splitbelow
+
+set updatetime=100
+set signcolumn=yes
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
@@ -26,6 +35,8 @@ command W w !sudo tee % > /dev/null
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set mouse=a
+set ttymouse=xterm2
 " Set 7 lines to the cursor - when moving vertically using j/k
 set so=7
 
@@ -42,8 +53,8 @@ set wildmenu
 set wildignore=*.o,*~,*.pyc
 if has("win16") || has("win32")
     set wildignore+=.git\*,.hg\*,.svn\*
-else
-    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
+    else
+        set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
 endif
 
 "Always show current position
@@ -106,15 +117,15 @@ syntax enable
 
 " Enable 256 colors palette in Gnome Terminal
 if $COLORTERM == 'gnome-terminal'
-    set t_Co=256
+set t_Co=256
 endif
 
 try
-    colorscheme delek
+colorscheme default
 catch
 endtry
 
-set background=dark
+set background=light
 
 " Set extra options when running in GUI mode
 if has("gui_running")
@@ -187,10 +198,10 @@ map <c-space> ?
 map <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-map <C-j> <C-W>j
-map <C-k> <C-W>k
-map <C-h> <C-W>h
-map <C-l> <C-W>l
+" map <C-j> <C-W>j
+" map <C-k> <C-W>k
+" map <C-h> <C-W>h
+" map <C-l> <C-W>l
 
 " Close the current buffer
 map <leader>bd :Bclose<cr>:tabclose<cr>gT
@@ -204,6 +215,8 @@ map <leader>h :bprevious<cr>
 "left/right arrows to switch buffers in normal mode
 map <right> :bn<cr>
 map <left> :bp<cr>
+ map <C-h> :bp<cr>
+ map <C-l> :bn<cr>
 
 " Useful mappings for managing tabs
 map <leader>tn :tabnew<cr>
@@ -227,8 +240,8 @@ map <leader>cd :cd %:p:h<cr>:pwd<cr>
 
 " Specify the behavior when switching between buffers 
 try
-  set switchbuf=useopen,usetab,newtab
-  set stal=2
+set switchbuf=useopen,usetab,newtab
+set stal=2
 catch
 endtry
 
@@ -236,7 +249,7 @@ endtry
 au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 
 
-""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""
 " => Status line
 """"""""""""""""""""""""""""""
 " Always show the status line
@@ -259,10 +272,10 @@ vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
 vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
 
 if has("mac") || has("macunix")
-  nmap <D-j> <M-j>
-  nmap <D-k> <M-k>
-  vmap <D-j> <M-j>
-  vmap <D-k> <M-k>
+nmap <D-j> <M-j>
+nmap <D-k> <M-k>
+vmap <D-j> <M-j>
+vmap <D-k> <M-k>
 endif
 
 " Delete trailing white space on save, useful for some filetypes ;)
@@ -331,7 +344,8 @@ function! <SID>BufcloseCloseIt()
         bnext
     endif
 
-    if bufnr("%") == l:currentBufNum
+    if bufnr("%") ==
+        l:currentBufNum
         new
     endif
 
@@ -340,13 +354,13 @@ function! <SID>BufcloseCloseIt()
     endif
 endfunction
 
-function! CmdLine(str)
-    call feedkeys(":" . a:str)
+function!  CmdLine(str)
+    call feedkeys(":" .  a:str)
 endfunction 
 
-function! VisualSelection(direction, extra_filter) range
+function!  VisualSelection(direction, extra_filter) range
     let l:saved_reg = @"
-    execute "normal! vgvy"
+    execute "normal!  vgvy"
 
     let l:pattern = escape(@", "\\/.*'$^~[]")
     let l:pattern = substitute(l:pattern, "\n$", "", "")
@@ -360,3 +374,82 @@ function! VisualSelection(direction, extra_filter) range
     let @/ = l:pattern
     let @" = l:saved_reg
 endfunction
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Plugins
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+call plug#begin()
+  Plug 'neoclide/coc.nvim', {'branch': 'release'}
+  Plug 'preservim/nerdtree'
+  Plug 'Xuyuanp/nerdtree-git-plugin'
+  Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
+  Plug 'ryanoasis/vim-devicons'
+  Plug 'airblade/vim-gitgutter'
+  Plug 'github/copilot.vim'
+  Plug 'DanBradbury/copilot-chat.vim'
+call plug#end()
+
+" coc config
+" use <tab> to trigger completion and navigate to the next complete item
+"function! CheckBackspace() abort
+"  let col = col('.') - 1
+"  return !col || getline('.')[col - 1]  =~# '\s'
+"endfunction
+"
+"inoremap <silent><expr> <Tab>
+"      \ coc#pum#visible() ? coc#pum#next(1) :
+"      \ CheckBackspace() ? "\<Tab>" :
+"      \ coc#refresh()
+
+" Use Tab to navigate completion list and confirm selection
+inoremap <silent><expr> <Tab>
+    \ pumvisible() ? "\<C-n>" :
+    \ <SID>check_back_space() ? "\<Tab>" :
+    \ coc#refresh()
+
+function! s:check_back_space() abort
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1] =~ '\s'
+endfunction
+
+" NERDTree
+"
+
+nnoremap <C-n> :NERDTreeToggle<CR>
+
+" Define a global variable to store the terminal buffer number
+let g:term_buf = -1
+
+function! ToggleTerminalSplit()
+  if bufexists(g:term_buf) && buflisted(g:term_buf)
+    " If terminal buffer exists and is listed, hide it
+    execute "buffer " . bufnr("#") " Go back to the previous buffer
+    silent! bdelete! g:term_buf " Remove the terminal buffer from the buffer list
+    let g:term_buf = -1
+  else
+    " If no terminal or not listed, open a new one in a split
+    terminal
+    resize 17 " Set terminal height
+    let g:term_buf = bufnr("%") " Store the new terminal buffer number
+    startinsert " Enter insert mode in the terminal
+  endif
+endfunction
+
+" Map a key (e.g., <Leader>t) to call the function
+nnoremap <C-t> :call ToggleTerminalSplit()<CR>
+
+" Remove the terminal from the open buffers list so we don't change to it with bn/bp
+autocmd TerminalOpen * if bufwinnr('') > 0 | setlocal nobuflisted | endif
+
+"let g:gitgutter_set_sign_backgrounds = 1
+"highlight link GitGutterChangeLine DiffText
+"highlight link GitGutterChangeLineNr Underlined
+"highlight SignColumn ctermbg=DarkGreen
+highlight clear SignColumn
+
+" CoPilot Chat Split
+function! ToggleCopilotSplit()
+    CopilotChatOpen
+endfunction
+
+nnoremap <C-c> :call ToggleCopilotSplit()<CR>

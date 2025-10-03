@@ -8,6 +8,9 @@ case $- in
       *) return;;
 esac
 
+# Java config
+export JAVA_HOME=/usr/lib/jvm/java-1.17.0-openjdk-amd64
+
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
 HISTCONTROL=ignoreboth
@@ -57,7 +60,8 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    eval "$(oh-my-posh init bash --config 'capr4n')"
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -105,26 +109,15 @@ if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
-if ! shopt -oq posix; then
-    if [ -f /usr/share/bash-completion/bash_completion ]; then
-        . /usr/share/bash-completion/bash_completion
-    elif [ -f /etc/bash_completion ]; then
-        . /etc/bash_completion
-    fi
-fi
-
 env=~/.ssh/agent.env
 
-agent_load_env () { 
-    test -f "$env" && . "$env" >| /dev/null ; 
+agent_load_env () {
+    test -f "$env" && . "$env" >| /dev/null ;
 }
 
 agent_start () {
     (umask 077; ssh-agent >| "$env")
-    . "$env" >| /dev/null ; 
+    . "$env" >| /dev/null ;
 }
 
 agent_load_env
@@ -141,6 +134,17 @@ fi
 
 unset env
 
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
+
 # Git Bash equivilance
 if [ -f ~/.bash_git ]; then
     . ~/.bash_git
@@ -149,5 +153,18 @@ fi
 
 export SCREENDIR=$HOME/.screen
 
+# ble.sh bash command syntax highlighting - like fi.sh
+#if [ -f ~/bin/ble.sh/ble.sh ]; then
+#    . ~/bin/ble.sh/ble.sh
+#fi
+
+# CLI Helpers
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+export PATH=~/bin:$PATH
+export KUBECONFIG=$HOME/.kube/config
+export DISPLAY=:0
 export VISUAL=vim
 export EDITOR="$VISUAL"
